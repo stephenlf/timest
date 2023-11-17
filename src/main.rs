@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum, Subcommand, command};
-use chrono::NaiveTime;
+use chrono::{NaiveTime, NaiveDate, NaiveDateTime};
 
 const DB_PATH: &str = "/home/sfunk/timest/timest.db3";
 const NPT_ADDR: &str = "time.nist.gov:123";
@@ -17,13 +17,38 @@ enum Commands {
     #[command(arg_required_else_help = true)]
     Clock(ClockArgs),
     /// View timesheet and reports
-    View(ViewArgs),
+    Report(ReportArgs),
+}
+
+#[derive(Parser, Debug)]
+struct ClockArgs {
+    /// Specify whether you are clocking in or out
+    io: IO,
+    /// Clock time, 24hr. Defaults to current system time.
+    #[arg(short, long)]
+    time: Option<NaiveTime>,
+    /// Clock date. Defaults to today.
+    #[arg(short, long)]
+    date: Option<NaiveDate>,
 }
 
 #[derive(Parser, Debug, Clone, Copy, ValueEnum)]
 enum IO {
     I,
     O
+}
+
+#[derive(Parser, Debug)]
+struct ReportArgs {
+    /// See today's raw timesheet
+    #[arg(value_enum)]
+    report_style: ReportStyle,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum ReportStyle {
+    Simple,
+    Fancy
 }
 
 impl std::fmt::Display for IO {
@@ -35,54 +60,75 @@ impl std::fmt::Display for IO {
     }
 }
 
-#[derive(Parser, Debug)]
-struct ClockArgs {
-    /// Specify whether you are clocking in or out
-    io: IO,
-    /// Clock time, 24hr. Defaults to current system time.
-    #[arg(short, long)]
-    time: Option<NaiveTime>,
-}
-
-#[derive(Parser, Debug)]
-struct ViewArgs {
-    
-}
-
 fn main() {
     let cli = Cli::parse();
+    
+    let conn = sqlite::open(DB_PATH).unwrap();
+    prepare_tables(&conn).expect("Expected available .db3 file");
 
-    let cli = match cli.command {
-        Commands::Clock(args) => args,
-        _ => todo!()
+    match cli.command {
+        Commands::Clock(args) => clock_cmd(conn, args),
+        Commands::Report(args) => report_cmd(conn, args),
     };
 
-    let operation = cli.io;
-    let time = cli.time.unwrap_or(current_time());
+
+}
+
+fn report_cmd(conn: sqlite::Connection, args: ReportArgs) {
+    match args.report_style {
+        ReportStyle::Simple => simple_report(&conn).unwrap(),
+        _ => todo!(),
+    }
+}
+
+const SQL_TODAYS_CLOCK: &str = "
+    SELECT * FROM times
+    WHERE Date(timestamp) = DATE('now')
+";
+
+fn simple_report(conn: &sqlite::Connection) -> Result<(), anyhow::Error> {
+    let mut stmt = conn.prepare(SQL_TODAYS_CLOCK)?;
+    println!("=======TODAY'S TIMESHEET=======");
+    for (i, row) in stmt.iter().enumerate() {
+        if let Ok(mut result) = row {
+            let timestamp: String = result.take(1).try_into().unwrap();
+            let (timestamp, _) = NaiveDateTime::parse_and_remainder(&timestamp, "%Y-%m-%d %H:%M:%S.").unwrap();
+            let io: String = result.take(2).try_into().unwrap();
+            println!("{i}  |  {timestamp} | {io}");
+        } else {
+            println!("{i}  |  Bad row 💀");
+        }
+    }
+    Ok(())
+
+}
+
+fn clock_cmd(conn: sqlite::Connection, args: ClockArgs) {
+    let operation = args.io;
+    let time = args.time.unwrap_or(current_time());
+    let date = args.date.unwrap_or(current_date());
+    let datetime = date.and_time(time);
 
     if check_time().is_err() {
             println!("Whoops! Your system clock appears to be too far out of sync. Try fixing it before running this command");
             panic!();
     }
-
-    let conn = sqlite::open(DB_PATH).unwrap();
-
-    prepare_tables(&conn).expect("Expected available .db3 file");
-    add_clock(&conn, time, operation).expect("Expected to be able to write to db");
+    
+    add_clock(&conn, datetime, operation).expect("Expected to be able to write to db");
 }
 
-fn add_clock(conn: &sqlite::Connection, time: NaiveTime, operation: IO) -> Result<(), anyhow::Error> {
+fn add_clock(conn: &sqlite::Connection, datetime: NaiveDateTime, operation: IO) -> Result<(), anyhow::Error> {
     let command = "
         INSERT INTO times (
             timestamp, io
         ) VALUES (
-            :time, :op
+            :datetime, :op
         )
     ";
     
     let mut stmt = conn.prepare(command)?;
     stmt.bind::<&[(_, sqlite::Value)]>(&[
-            (":time", time.to_string().into()), 
+            (":datetime", datetime.to_string().into()), 
             (":op", operation.to_string().into()),
             ][..])?;
     
@@ -92,6 +138,10 @@ fn add_clock(conn: &sqlite::Connection, time: NaiveTime, operation: IO) -> Resul
 
 fn current_time() -> chrono::NaiveTime {
     chrono::Local::now().time()
+}
+
+fn current_date() -> chrono::NaiveDate {
+    chrono::Local::now().date_naive()
 }
 
 fn prepare_tables(conn: &sqlite::Connection) -> Result<(), anyhow::Error> {
