@@ -9,7 +9,7 @@ use fancy_report::fancy_report;
 pub fn report_cmd(conn: sqlite::Connection, args: ReportArgs) {
     match args.report_style {
         ReportStyle::Simple => simple_report(&conn, None).unwrap(),
-        ReportStyle::Fancy => fancy_report(&conn).unwrap(),
+        ReportStyle::Fancy => fancy_report(&conn, None).unwrap(),
     }
 }
 
@@ -23,22 +23,25 @@ mod simple_report {
     use chrono::{NaiveDate, NaiveDateTime};
     pub fn simple_report(conn: &sqlite::Connection, date: Option<NaiveDate>) -> Result<(), anyhow::Error> {
         let date = date.map_or_else(
-            || "DATE('now', 'localtime')".to_string(), 
+            || chrono::Local::now().naive_local().date().to_string(), 
             |d| d.format("%Y-%m-%d").to_string());
+        
+        println!("Gathering data from day {date}");
         let mut stmt = conn.prepare(super::SQL_TODAYS_CLOCK)?;
         stmt.bind((1, date.as_str()))?;
         println!("====TODAY'S TIMESHEET====");
-        println!("->>    {}\n", &sql_date(conn)?);
+        println!("->>    {}", &sql_date(conn)?);
         println!(" ________________________");
 
-        for (i, row) in stmt.iter().enumerate() {
+        for row in stmt.iter() {
             if let Ok(mut result) = row {
+                let idx: i64 = result.read(0);
                 let timestamp: String = result.take(1).try_into().unwrap();
                 let timestamp = NaiveDateTime::parse_from_str(&timestamp, "%Y-%m-%d %H:%M:%S").unwrap();
                 let io: String = result.take(2).try_into().unwrap();
-                println!("|  {i}  |  {}  |  {io}  |", timestamp.time());
+                println!("|  {idx}  |  {}  |  {io}  |",timestamp.time());
             } else {
-                println!("{i}  |  Bad row 💀");
+                println!("|   |  Bad row 💀");
             }
         }
         Ok(())
