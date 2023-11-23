@@ -14,6 +14,9 @@ use report::*;
 mod check_time;
 use check_time::*;
 
+mod fix;
+use fix::*;
+
 fn main() {
     let cli = Cli::parse();
     
@@ -28,6 +31,7 @@ fn main() {
     match cli.command {
         Commands::Clock(args) => clock_cmd(conn, args),
         Commands::Report(args) => report_cmd(conn, args),
+        Commands::Fix(args) => fix(conn, args),
     };
 
 }

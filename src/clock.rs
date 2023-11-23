@@ -10,16 +10,18 @@ pub fn clock_cmd(conn: sqlite::Connection, args: ClockArgs) {
     add_clock(&conn, datetime, operation).expect("Expected to be able to write to db");
 }
 
+const CLOCK_SQL: &str = "
+    INSERT INTO times (
+        timestamp, io
+    ) VALUES (
+        :datetime, :op
+    )
+";
+
 fn add_clock(conn: &sqlite::Connection, datetime: NaiveDateTime, operation: IO) -> Result<(), anyhow::Error> {
-    let command = "
-        INSERT INTO times (
-            timestamp, io
-        ) VALUES (
-            :datetime, :op
-        )
-    ";
+
     
-    let mut stmt = conn.prepare(command)?;
+    let mut stmt = conn.prepare(CLOCK_SQL)?;
     stmt.bind::<&[(_, sqlite::Value)]>(&[
             (":datetime", datetime.format("%Y-%m-%d %H:%M:%S").to_string().into()), 
             (":op", operation.to_string().into()),

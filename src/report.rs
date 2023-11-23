@@ -7,9 +7,15 @@ use fancy_report::fancy_report;
 
 
 pub fn report_cmd(conn: sqlite::Connection, args: ReportArgs) {
-    match args.report_style {
-        ReportStyle::Simple => simple_report(&conn, None).unwrap(),
-        ReportStyle::Fancy => fancy_report(&conn, None).unwrap(),
+    let report_style = args.report_style.unwrap_or(ReportStyle::Fancy);
+    let date = if args.yesterday {
+        chrono::Local::now().date_naive().pred_opt().expect("People should not be clocking in at NaiveDate::MIN")
+    } else {
+        args.date.unwrap_or(chrono::Local::now().date_naive())
+    };
+    match report_style {
+        ReportStyle::Simple => simple_report(&conn, date).unwrap(),
+        ReportStyle::Fancy => fancy_report(&conn, date).unwrap(),
     }
 }
 
@@ -21,10 +27,8 @@ const SQL_TODAYS_CLOCK: &str = "
 
 mod simple_report {
     use chrono::{NaiveDate, NaiveDateTime};
-    pub fn simple_report(conn: &sqlite::Connection, date: Option<NaiveDate>) -> Result<(), anyhow::Error> {
-        let date = date.map_or_else(
-            || chrono::Local::now().naive_local().date().to_string(), 
-            |d| d.format("%Y-%m-%d").to_string());
+    pub fn simple_report(conn: &sqlite::Connection, date: NaiveDate) -> Result<(), anyhow::Error> {
+        let date = date.format("%Y-%m-%d").to_string();
         
         println!("Gathering data from day {date}");
         let mut stmt = conn.prepare(super::SQL_TODAYS_CLOCK)?;

@@ -89,12 +89,10 @@ impl Record {
     }
 }
 
-pub fn fancy_report(conn: &sqlite::Connection, date: Option<NaiveDate>) -> Result<(), anyhow::Error> {
+pub fn fancy_report(conn: &sqlite::Connection, date: NaiveDate) -> Result<(), anyhow::Error> {
     let mut stmt = conn.prepare(super::SQL_TODAYS_CLOCK)?;
 
-    let date = date.map_or_else(
-        || chrono::Local::now().naive_local().date().to_string(), 
-        |d| d.format("%Y-%m-%d").to_string());
+    let date = date.format("%Y-%m-%d").to_string();
     stmt.bind((1, date.as_str()))?;
 
     let intervals = get_intervals(&mut stmt)?;
