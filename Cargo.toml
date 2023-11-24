@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.75"
 chrono = "0.4.31"
 clap = { version = "4.4.8", features = ["derive"] }
+microxdg = "0.1.0"
 ntp = "0.5.0"
 recolored = "1.9.3"
 sqlite = "0.32.0"

@@ -280,6 +280,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
+name = "microxdg"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c563f248eed39cea5f1b77dc7f32516a023868641c665048389490bde33bac1"
+
+[[package]]
 name = "ntp"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -408,6 +414,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "microxdg",
  "ntp",
  "recolored",
  "sqlite",

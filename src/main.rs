@@ -1,6 +1,5 @@
 use anyhow::Result;
-
-const DB_PATH: &str = "/home/sfunk/timest/timest.db3";
+use microxdg::Xdg;
 
 mod args;
 use args::*;
@@ -17,10 +16,23 @@ use check_time::*;
 mod fix;
 use fix::*;
 
+
 fn main() {
     let cli = Cli::parse();
+
+    let xdg = Xdg::new().expect("Please set $HOME or $USER shell variable");
+
+    let root_dir = xdg.data()
+        .expect("Expected to find XDG_DATA_HOME or $HOME/.local/share")
+        .join("timest");
     
-    let conn = sqlite::open(DB_PATH).unwrap();
+    if !root_dir.is_dir() {
+        std::fs::create_dir_all(&root_dir).expect("Expect to be able to find/modify local app data folder");
+    }
+
+    let db_path = root_dir.join("timest.db3");
+    
+    let conn = sqlite::open(db_path).expect("Should be able to open .db3 database");
     prepare_tables(&conn).expect("Expected available .db3 file");
 
     if check_time().is_err() {
