@@ -1,4 +1,4 @@
-use clap::{ValueEnum, Subcommand, command};
+use clap::{ValueEnum, Subcommand, command, };
 pub use clap::Parser;
 use chrono::{NaiveDate, NaiveTime};
 
@@ -16,23 +16,15 @@ pub enum Commands {
     /// View timesheet and reports
     Report(ReportArgs),
     /// Fix an entry by ID
-    Fix(FixArgs),
-}
-
-#[derive(Parser, Debug)]
-pub struct FixArgs {
-    /// Timesheet table entry ID to modify
-    pub id: i64,
-    #[command(subcommand)]
-    pub command: FixCommands,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum FixCommands {
-    /// Update the time, date, or IO of entry
-    Modify(ClockArgs),
-    /// Delete an entry
-    Delete,
+    Fix {
+        id: i64, 
+        #[clap(flatten)]
+        args: ClockArgs
+    },
+    /// Delete an entry by ID
+    Delete {
+        id: i64
+    }
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -62,13 +54,17 @@ pub struct ReportArgs {
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum ReportStyle {
+    /// View raw timestamps
     Simple,
+    /// View total time worked, among other things
     Fancy
 }
 
 #[derive(Parser, Debug, Clone, Copy, ValueEnum)]
 pub enum IO {
+    /// Clock in
     I,
+    /// Clock out
     O
 }
 

@@ -16,21 +16,13 @@ use check_time::*;
 mod fix;
 use fix::*;
 
+mod delete;
+use delete::del;
 
 fn main() {
     let cli = Cli::parse();
 
-    let xdg = Xdg::new().expect("Please set $HOME or $USER shell variable");
-
-    let root_dir = xdg.data()
-        .expect("Expected to find XDG_DATA_HOME or $HOME/.local/share")
-        .join("timest");
-    
-    if !root_dir.is_dir() {
-        std::fs::create_dir_all(&root_dir).expect("Expect to be able to find/modify local app data folder");
-    }
-
-    let db_path = root_dir.join("timest.db3");
+    let db_path = get_db_path();
     
     let conn = sqlite::open(db_path).expect("Should be able to open .db3 database");
     prepare_tables(&conn).expect("Expected available .db3 file");
@@ -43,9 +35,32 @@ fn main() {
     match cli.command {
         Commands::Clock(args) => clock_cmd(conn, args),
         Commands::Report(args) => report_cmd(conn, args),
-        Commands::Fix(args) => fix(conn, args),
+        Commands::Fix{id, args} => fix(conn, id, args),
+        Commands::Delete { id } => del(conn, id),
     };
 
+}
+
+fn get_db_path() -> impl AsRef<std::path::Path> + std::fmt::Debug {
+    let root_dir = if !cfg!(debug_assertions) {    
+        let xdg = Xdg::new().expect("Please set $HOME or $USER shell variable");
+
+        let root_dir = xdg.data()
+            .expect("Expected to find XDG_DATA_HOME or $HOME/.local/share")
+            .join("timest");
+        
+        if !root_dir.is_dir() {
+            std::fs::create_dir_all(&root_dir).expect("Expect to be able to find/modify local app data folder");
+        }
+
+        root_dir
+    } else {
+        std::env::current_exe().unwrap()
+            .parent().unwrap()
+            .to_owned()
+    };
+
+    root_dir.join("timest.db3")
 }
 
 fn prepare_tables(conn: &sqlite::Connection) -> Result<(), anyhow::Error> {

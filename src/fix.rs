@@ -1,21 +1,4 @@
-use crate::{FixArgs, FixCommands};
-
-pub fn fix(connection: sqlite::Connection, args: FixArgs) {
-    match args.command {
-        FixCommands::Delete => delete(connection, args.id),
-        FixCommands::Modify(modify_args) => modify(connection, args.id, modify_args),
-    }
-}
-
-const DEL_SQL: &str = "
-    DELETE FROM times WHERE ID = ?
-";
-
-fn delete(connection: sqlite::Connection, id: i64) {
-    let mut stmt = connection.prepare(DEL_SQL).unwrap();
-    stmt.bind((1, id)).unwrap();
-    let _ = stmt.next().unwrap();
-}
+use crate::ClockArgs;
 
 const MODIFY_SQL: &str = "
     UPDATE times
@@ -23,7 +6,7 @@ const MODIFY_SQL: &str = "
     WHERE id = :id
 ";
 
-fn modify(connection: sqlite::Connection, id: i64, args: crate::ClockArgs) {
+pub fn fix(connection: sqlite::Connection, id: i64, args: crate::ClockArgs) {
     let time = args.time.unwrap_or(chrono::Local::now().time());
     let date = args.date.unwrap_or(chrono::Local::now().date_naive());
     let datetime = date.and_time(time);

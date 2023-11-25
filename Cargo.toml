@@ -1,7 +1,9 @@
 [package]
 name = "timest"
 version = "0.1.0"
+authors = ["Stephen Funk"]
 edition = "2021"
+description = "Dead simple timesheet/punch card/clock report CLI"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
