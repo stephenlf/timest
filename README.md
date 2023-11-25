@@ -3,7 +3,11 @@
 Timest is a dead simple CLI time card. Clock in. Clock out. See how much you worked.
 
 ## Installation
-1. Build from source - _must have [cargo/rustup](https://doc.rust-lang.org/cargo/getting-started/installation.html) installed_
+1. With `cargo`
+```bash
+$ cargo install timest
+```
+2. Build from source - _must have [cargo/rustup](https://doc.rust-lang.org/cargo/getting-started/installation.html) installed_
 ```bash
 # Linux
 $ git clone https://github.com/stephenlf/timest.git
