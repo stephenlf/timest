@@ -1,12 +1,14 @@
 [package]
 name = "timest"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Stephen Funk"]
 edition = "2021"
 description = "Dead simple timesheet/punch card/clock report CLI. Clock in. Clock out. See time worked."
 repository = "https://github.com/stephenlf/timest"
 license = "MIT"
 exclude = ["assets/*"]
+keywords = ["timesheet", "punch card", "time report", "cli", "hours"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
