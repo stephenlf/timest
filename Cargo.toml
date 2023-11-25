@@ -7,7 +7,7 @@ description = "Dead simple timesheet/punch card/clock report CLI. Clock in. Cloc
 repository = "https://github.com/stephenlf/timest"
 license = "MIT"
 exclude = ["assets/*"]
-keywords = ["timesheet", "punch card", "time report", "cli", "hours"]
+keywords = ["timesheet", "punchcard", "clock", "cli", "hours"]
 categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
