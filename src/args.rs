@@ -34,7 +34,7 @@ pub struct ClockArgs {
     /// Clock time, 24hr. Defaults to current system time. Fmt. HH:MM:SS.
     #[arg(short, long)]
     pub time: Option<NaiveTime>,
-    /// Clock date. Defaults to today.
+    /// Clock date. Defaults to today. Fmt. YYYY-MM-DD.
     #[arg(short, long)]
     pub date: Option<NaiveDate>,
 }

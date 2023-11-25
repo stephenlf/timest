@@ -1,5 +1,3 @@
-use crate::ClockArgs;
-
 const MODIFY_SQL: &str = "
     UPDATE times
     SET timestamp = :timestamp, io = :io
