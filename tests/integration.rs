@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use predicates::prelude::*;
 
 fn get_db_path() -> String {
     let test_db_path = std::env::var("TIMEST_TEST").expect("

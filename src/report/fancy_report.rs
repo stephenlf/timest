@@ -30,35 +30,35 @@ impl Interval {
             (None, Some(Record(time, IO::O))) => Some(
                 Self { 
                     start: NaiveTime::MIN, 
-                    end: time.clone(),
+                    end: *time,
                     status: IntervalStatus::MissingStart
                 }),
             (Some(Record(time_a, IO::O)), Some(Record(time_b, IO::O))) => Some(
                 Self { 
-                    start: time_a.clone(),
-                    end: time_b.clone(),
+                    start: *time_a,
+                    end: *time_b,
                     status: IntervalStatus::MissingStart
                 }),
 
             // Invalid interval: missing end time
             (Some(Record(time, IO::I)), None) => Some(
                 Self { 
-                    start: time.clone() ,
+                    start: *time,
                     end: NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
                     status: IntervalStatus::MissingEnd
                 }),
             (Some(Record(time_a, IO::I)), Some(Record(time_b, IO::I))) => Some(
                 Self { 
-                    start: time_a.clone(),
-                    end: time_b.clone(),
+                    start: *time_a,
+                    end: *time_b,
                     status: IntervalStatus::MissingEnd
                 }),
 
             // Complete interval
             (Some(Record(time_in, IO::I)), Some(Record(time_out, IO::O))) => Some(
                 Self { 
-                    start: time_in.clone(), 
-                    end: time_out.clone() ,
+                    start: *time_in, 
+                    end: *time_out,
                     status: IntervalStatus::Complete
                 }),
         }
@@ -106,7 +106,7 @@ fn get_intervals(stmt: &mut sqlite::Statement) -> Result<Vec<Interval>, anyhow::
     let mut prev_record: Option<Record> = None;
 
     while let State::Row = stmt.next()? {
-        let current_record = Some(Record::from_statement(&stmt)?);
+        let current_record = Some(Record::from_statement(stmt)?);
         if let Some(interval) = Interval::from_records(&prev_record, &current_record) {
             intervals.push(interval)
         }
@@ -134,8 +134,8 @@ fn print_total(intervals: &[Interval]) {
         let time_worked = NaiveTime::from_num_seconds_from_midnight_opt(duration as u32, 0)
             .unwrap()
             .to_string();
-        let pretty_time = if time_worked.chars().next().unwrap() == '0' {
-            &time_worked[1..]
+        let pretty_time = if let Some(stripped) = time_worked.strip_prefix('0') {
+            stripped
         } else {
             time_worked.as_str()
         }.blue().bold();
@@ -195,8 +195,7 @@ fn print_header() {
     print!("        noon");
     print!("      2");
     print!("         4");
-    print!("         6");
-    println!("");
+    println!("         6");
 }
 
 fn print_bar(intervals: &[Interval]) {
@@ -219,6 +218,6 @@ fn print_bar(intervals: &[Interval]) {
         }
         print!("-");
     }
-    println!("");
+    println!();
 }
 
