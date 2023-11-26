@@ -1,11 +1,17 @@
 use clap::{ValueEnum, Subcommand, command, };
 pub use clap::Parser;
 use chrono::{NaiveDate, NaiveTime};
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
+#[command(version)]
+#[command(author, about)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+    /// Specify the path to the sqlite databse.db3. Defaults to XDG data home.
+    #[arg(long)]
+    pub db_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Subcommand)]

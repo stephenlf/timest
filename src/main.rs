@@ -1,7 +1,8 @@
 use anyhow::Result;
 use microxdg::Xdg;
+use std::path::PathBuf;
 
-mod args;
+pub mod args;
 use args::*;
 
 mod clock;
@@ -22,7 +23,7 @@ use delete::del;
 fn main() {
     let cli = Cli::parse();
 
-    let db_path = get_db_path();
+    let db_path = get_db_path(cli.db_path);
     
     let conn = sqlite::open(db_path).expect("Should be able to open .db3 database");
     prepare_tables(&conn).expect("Expected available .db3 file");
@@ -41,7 +42,11 @@ fn main() {
 
 }
 
-fn get_db_path() -> impl AsRef<std::path::Path> + std::fmt::Debug {
+fn get_db_path(user_path: Option<PathBuf>) -> impl AsRef<std::path::Path> + std::fmt::Debug {
+    if let Some(path) = user_path {
+        return path;
+    }
+    
     let root_dir = if !cfg!(debug_assertions) {    
         let xdg = Xdg::new().expect("Please set $HOME or $USER shell variable");
 
