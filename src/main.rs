@@ -1,5 +1,5 @@
 use anyhow::Result;
-use microxdg::Xdg;
+use platform_dirs::AppDirs;
 use std::path::PathBuf;
 
 pub mod args;
@@ -42,23 +42,30 @@ fn main() {
 
 }
 
+#[cfg(target_os = "linux")]
+const APP_DIR_ERROR: &str = "Could not find $XDG_DATA_HOME or ~/.local/share";
+
+#[cfg(target_os = "macos")]
+const APP_DIR_ERROR: &str = "Could not find ~/Library/Application Support";
+
+#[cfg(target_os = "windows")]
+const APP_DIR_ERROR: &str = "Could not find %LOCALAPPDATA% (C:\\Users\\%USERNAME%\\AppData\\Local)";
+
 fn get_db_path(user_path: Option<PathBuf>) -> impl AsRef<std::path::Path> + std::fmt::Debug {
     if let Some(path) = user_path {
         return path;
     }
     
     let root_dir = if !cfg!(debug_assertions) {    
-        let xdg = Xdg::new().expect("Please set $HOME or $USER shell variable");
+        let app_dirs = AppDirs::new(Some("timest"), false).expect(APP_DIR_ERROR);
 
-        let root_dir = xdg.data()
-            .expect("Expected to find XDG_DATA_HOME or $HOME/.local/share")
-            .join("timest");
+        let timest_dir = app_dirs.data_dir;
         
-        if !root_dir.is_dir() {
-            std::fs::create_dir_all(&root_dir).expect("Expect to be able to find/modify local app data folder");
+        if !timest_dir.is_dir() {
+            std::fs::create_dir_all(&timest_dir).expect("Expect to be able to find/modify local app data folder");
         }
 
-        root_dir
+        timest_dir
     } else {
         std::env::current_exe().unwrap()
             .parent().unwrap()
