@@ -20,7 +20,7 @@ use fix::*;
 mod delete;
 use delete::del;
 
-fn main() {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let db_path = get_db_path(cli.db_path);
@@ -28,9 +28,12 @@ fn main() {
     let conn = sqlite::open(db_path).expect("Should be able to open .db3 database");
     prepare_tables(&conn).expect("Expected available .db3 file");
 
-    if check_time().is_err() {
-        println!("Whoops! Your system clock appears to be too far out of sync. Try fixing it before running this command");
-        panic!();
+    if check_time().is_err_and(
+        |err| prompt_err(&err.to_string()).is_err()
+    ) {
+            println!("Shutting down");
+            drop(conn);
+            return Err(anyhow::anyhow!("Exiting"));
     }
 
     match cli.command {
@@ -39,6 +42,8 @@ fn main() {
         Commands::Fix{id, args} => fix(conn, id, args),
         Commands::Delete { id } => del(conn, id),
     };
+    
+    Ok(())
 
 }
 
@@ -50,6 +55,18 @@ const APP_DIR_ERROR: &str = "Could not find ~/Library/Application Support";
 
 #[cfg(target_os = "windows")]
 const APP_DIR_ERROR: &str = "Could not find %LOCALAPPDATA% (C:\\Users\\%USERNAME%\\AppData\\Local)";
+
+fn prompt_err(error_msg: &str) -> Result<()> {
+    println!("Whoops! Error: {error_msg}. Are you sure you want to continue? (y/n)");
+
+    let mut input = String::with_capacity(2);
+    std::io::stdin().read_line(&mut input)?;
+
+    match input.trim() {
+        "y" | "Y" | "yes" | "YES" | "Yes" => Ok(()),
+        _ => Err(anyhow::anyhow!("User-initiated shutdown"))
+    }
+}
 
 fn get_db_path(user_path: Option<PathBuf>) -> impl AsRef<std::path::Path> + std::fmt::Debug {
     if let Some(path) = user_path {
