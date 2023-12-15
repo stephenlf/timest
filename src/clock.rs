@@ -1,11 +1,21 @@
-use crate::{ClockArgs, IO};
+use crate::{ClockArgs, IO, check_time::*};
 use chrono::NaiveDateTime;
 
 pub fn clock_cmd(conn: sqlite::Connection, args: ClockArgs) {
     let operation = args.io;
-    let time = args.time.unwrap_or(current_time());
+    let time = args.time.unwrap_or(
+        if check_time().is_err_and(
+            |err| prompt_err(&err.to_string()).is_err()
+        ) {
+            shutdown(conn);
+        } else { 
+            current_time()
+        }
+    );
     let date = args.date.unwrap_or(current_date());
     let datetime = date.and_time(time);
+
+
     
     add_clock(&conn, datetime, operation).expect("Expected to be able to write to db");
 }

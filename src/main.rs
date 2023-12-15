@@ -12,7 +12,6 @@ mod report;
 use report::*;
 
 mod check_time;
-use check_time::*;
 
 mod fix;
 use fix::*;
@@ -27,14 +26,6 @@ fn main() -> Result<()> {
     
     let conn = sqlite::open(db_path).expect("Should be able to open .db3 database");
     prepare_tables(&conn).expect("Expected available .db3 file");
-
-    if check_time().is_err_and(
-        |err| prompt_err(&err.to_string()).is_err()
-    ) {
-            println!("Shutting down");
-            drop(conn);
-            return Err(anyhow::anyhow!("Exiting"));
-    }
 
     match cli.command {
         Commands::Clock(args) => clock_cmd(conn, args),
@@ -56,17 +47,7 @@ const APP_DIR_ERROR: &str = "Could not find ~/Library/Application Support";
 #[cfg(target_os = "windows")]
 const APP_DIR_ERROR: &str = "Could not find %LOCALAPPDATA% (C:\\Users\\%USERNAME%\\AppData\\Local)";
 
-fn prompt_err(error_msg: &str) -> Result<()> {
-    println!("Whoops! Error: {error_msg}. Are you sure you want to continue? (y/n)");
 
-    let mut input = String::with_capacity(2);
-    std::io::stdin().read_line(&mut input)?;
-
-    match input.trim() {
-        "y" | "Y" | "yes" | "YES" | "Yes" => Ok(()),
-        _ => Err(anyhow::anyhow!("User-initiated shutdown"))
-    }
-}
 
 fn get_db_path(user_path: Option<PathBuf>) -> impl AsRef<std::path::Path> + std::fmt::Debug {
     if let Some(path) = user_path {
@@ -93,7 +74,7 @@ fn get_db_path(user_path: Option<PathBuf>) -> impl AsRef<std::path::Path> + std:
 }
 
 fn prepare_tables(conn: &sqlite::Connection) -> Result<(), anyhow::Error> {
-    let command = "
+    let make_times_table = "
         CREATE TABLE IF NOT EXISTS times (
             id INTEGER PRIMARY KEY NOT NULL,
             timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -101,6 +82,15 @@ fn prepare_tables(conn: &sqlite::Connection) -> Result<(), anyhow::Error> {
         );
     ";
 
-    conn.execute(command)?;
+    conn.execute(make_times_table)?;
+
+    let make_config_table = "
+        CREATE TABLE IF NOT EXISTS params (
+            parameter TEXT PRIMARY KEY NOT NULL UNIQUE,
+            value TEXT
+        ) WITHOUT ROWID
+    ";
+
+    conn.execute(make_config_table)?;
     Ok(())
 }

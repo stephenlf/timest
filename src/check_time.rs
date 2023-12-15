@@ -17,6 +17,23 @@ pub fn check_time() -> Result<()> {
     }
 }
 
+pub fn prompt_err(error_msg: &str) -> Result<()> {
+    println!("Whoops! Error: {error_msg}. Are you sure you want to continue? (y/n)");
+
+    let mut input = String::with_capacity(2);
+    std::io::stdin().read_line(&mut input)?;
+
+    match input.trim() {
+        "y" | "Y" | "yes" | "YES" | "Yes" => Ok(()),
+        _ => Err(anyhow::anyhow!("User-initiated shutdown"))
+    }
+}
+
+pub fn shutdown(conn: sqlite::Connection) -> ! {
+    println!("Shutting down");
+    drop(conn);
+    panic!("Exiting");
+}
 
 fn get_time() -> Result<u64> {
     let response = ntp::request(NPT_ADDR);
